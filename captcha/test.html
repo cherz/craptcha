@@ -34,15 +34,14 @@
 
     #litterbox {
       position: absolute;
-      bottom: 5px;
-      left: 20px;
+      bottom: 20px;
+      left: 50px;
       width: 120px;
       height: 80px;
       background-image: url('litterbox.png');
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
-      z-index: 69;
     }
 
     #trash-can {
@@ -58,25 +57,12 @@
       cursor: pointer;
     }
 
-    #smugcat {
-      position: absolute;
-      bottom: 40px;
-      left: 60px;
-      width: 128px;
-      height: 139px;
-      background-image: url('smugcat.png');
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      z-index: 1;
-    }
-
     #custom-cursor {
       position: absolute;
       width: 32px;
       height: 32px;
       pointer-events: none;
-      z-index: 100;
+      z-index: 1000;
       background-image: url('scooper.png');
       background-size: contain;
       background-repeat: no-repeat;
@@ -103,8 +89,8 @@
 
     #poop-counter {
       position: absolute;
-      top: 30%;
-      left: 20px;
+      top: 10px;
+      right: 20px;
       background: rgba(255, 255, 255, 0.9);
       padding: 8px 12px;
       border-radius: 20px;
@@ -151,12 +137,11 @@
     <div id="game-title">Clean The Litterbox</div>
     
     <div id="instructions">
-     Scoop poops out of the litterbox and place in trash to continue.
+     Scoop 10 poops out of the litterbox to continue.
     </div>
     
-    <div id="poop-counter">Poops Collected: <span id="counter">0</span>/10</div>
+    <div id="poop-counter">Poops Collectedf: <span id="counter">0</span>/10</div>
     
-    <div id="smugcat"></div>
     <div id="litterbox"></div>
     <div id="trash-can"></div>
     
@@ -177,8 +162,6 @@
       const counterDisplay = document.getElementById('counter');
       
       let poopCount = 0;
-      let poopsNeeded = 10
-      let poopSpawnChance = 0.7
       let carryingPoop = null;
       let isMouseOverLitterbox = false;
       let lastPoopSpawn = 0;
@@ -190,13 +173,13 @@
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        cursor.style.left = (x - 18) + 'px';
-        cursor.style.top = (y - 30) + 'px';
+        cursor.style.left = (x - 16) + 'px';
+        cursor.style.top = (y - 16) + 'px';
         
         // Update carried poop position
         if (carryingPoop) {
-          carryingPoop.style.left = (x) + 'px';
-          carryingPoop.style.top = (y) + 'px';
+          carryingPoop.style.left = (x - 10) + 'px';
+          carryingPoop.style.top = (y - 10) + 'px';
         }
       });
 
@@ -236,8 +219,8 @@
         // Prevent too frequent spawning (minimum 500ms between spawns)
         if (now - lastPoopSpawn < 500) return;
         
-        // chance to spawn poop
-        if (Math.random() < poopSpawnChance && !carryingPoop) {
+        // 20% chance to spawn poop
+        if (Math.random() < 0.2 && !carryingPoop) {
           spawnPoop(e);
           lastPoopSpawn = now;
         }
@@ -262,7 +245,8 @@
         poop.classList.add('carrying-poop');
       }
 
-      function handlePoop() {
+      // Handle clicking on trash can
+      trashCan.addEventListener('click', (e) => {
         if (carryingPoop) {
           // Remove the poop
           container.removeChild(carryingPoop);
@@ -280,20 +264,10 @@
           }, 150);
           
           // Check if game is complete
-          if (poopCount >= poopsNeeded) {
+          if (poopCount >= 10) {
             captchaSuccess()
           }
         }
-      }
-
-      // Handle clicking on trash can
-      trashCan.addEventListener('click', (e) => {
-        handlePoop();
-      });
-
-      // Handle hover over trash can
-      trashCan.addEventListener('mouseover', (e) => {
-        handlePoop();
       });
 
       // Ensure cursor starts hidden
