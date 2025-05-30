@@ -165,10 +165,10 @@
 
 <body>
   <div id="captcha-container">
-    <div id="game-title">Clean The Litterbox</div>
+    <div id="game-title">Clean The Litter Box</div>
     
     <div id="instructions">
-      Scoop poops out of the litterbox and place in trash to continue.
+      Scoop poops out of the litter box and place in trash to continue.
     </div>
     
     <div id="poop-counter">Poops Collected: <span id="counter">0</span>/10</div>
@@ -192,14 +192,14 @@
       const litterbox = document.getElementById('litterbox');
       const trashCan = document.getElementById('trash-can');
       const counterDisplay = document.getElementById('counter');
-      
-      let poopCount = 0;
-      let poopsNeeded = 10;
-      let poopSpawnChance = 0.7;
-      let carryingPoop = null;
-      let isOverLitterbox = false;
-      let lastPoopSpawn = 0;
-      let poops = [];
+
+      let poopCount = 0;            // Nu,ber of poops collected
+      let poopsNeeded = 10;         // Number of poops needed to pass
+      let poopSpawnChance = 0.8;    // Percentage a poop will spawn when treasure hunting in the litter box
+      let carryingPoop = null;      // Container connecting poop to scooper
+      let isOverLitterbox = false;  // Is cursor/scooper over the litter box?
+      let lastPoopSpawn = 0;        // Timer to prevent too many poops to spawn
+      let poops = [];               // Poop array for checking status of poops ... What am I doing with my life?
 
       // Unified function to get coordinates from mouse or touch event
       function getEventCoordinates(e) {
@@ -226,7 +226,7 @@
         }
       }
 
-      // Check if over litterbox for both mouse and touch
+      // Check if over litter box for both mouse and touch
       function checkLitterboxHover(e) {
         const coords = getEventCoordinates(e);
         const rect = container.getBoundingClientRect();
@@ -294,8 +294,9 @@
       }
 
       function spawnPoop(e) {
+        const pop = new Audio("pop.mp3")
         const poop = document.createElement('div');
-        poop.className = 'poop';
+        poop.className = 'poop'
         
         const coords = getEventCoordinates(e);
         const rect = container.getBoundingClientRect();
@@ -304,7 +305,7 @@
         
         poop.style.left = (x - 10) + 'px';
         poop.style.top = (y - 10) + 'px';
-        
+        pop.play()
         container.appendChild(poop);
         poops.push(poop);
         
@@ -315,6 +316,8 @@
 
       function handlePoop() {
         if (carryingPoop) {
+          const plop = new Audio("plop.mp3")
+          plop.play()
           // Remove the poop
           container.removeChild(carryingPoop);
           poops = poops.filter(p => p !== carryingPoop);
