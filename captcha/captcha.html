@@ -21,6 +21,11 @@
       position: relative;
       overflow: hidden;
       cursor: none;
+      touch-action: none; /* Prevent scrolling and zooming on touch devices */
+      user-select: none; /* Prevent text selection */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
     }
 
     #game-title {
@@ -30,6 +35,10 @@
       color: #4A4A4A;
       margin: 10px 0;
       text-shadow: 1px 1px 2px rgba(255,255,255,0.7);
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
     }
 
     #litterbox {
@@ -112,6 +121,10 @@
       color: #4A4A4A;
       border: 2px solid #DDD;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
     }
 
     #instructions {
@@ -126,6 +139,10 @@
       text-align: center;
       color: #4A4A4A;
       border: 1px solid #DDD;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
     }
 
     .success-message {
@@ -151,7 +168,7 @@
     <div id="game-title">Clean The Litterbox</div>
     
     <div id="instructions">
-     Scoop poops out of the litterbox and place in trash to continue.
+      Scoop poops out of the litterbox and place in trash to continue.
     </div>
     
     <div id="poop-counter">Poops Collected: <span id="counter">0</span>/10</div>
@@ -177,18 +194,27 @@
       const counterDisplay = document.getElementById('counter');
       
       let poopCount = 0;
-      let poopsNeeded = 10
-      let poopSpawnChance = 0.7
+      let poopsNeeded = 10;
+      let poopSpawnChance = 0.7;
       let carryingPoop = null;
-      let isMouseOverLitterbox = false;
+      let isOverLitterbox = false;
       let lastPoopSpawn = 0;
       let poops = [];
 
-      // Update cursor position
-      container.addEventListener('mousemove', (e) => {
+      // Unified function to get coordinates from mouse or touch event
+      function getEventCoordinates(e) {
+        if (e.touches && e.touches.length > 0) {
+          return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+        }
+        return { clientX: e.clientX, clientY: e.clientY };
+      }
+
+      // Update cursor position for both mouse and touch
+      function updateCursorPosition(e) {
+        const coords = getEventCoordinates(e);
         const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = coords.clientX - rect.left;
+        const y = coords.clientY - rect.top;
         
         cursor.style.left = (x - 18) + 'px';
         cursor.style.top = (y - 30) + 'px';
@@ -198,37 +224,61 @@
           carryingPoop.style.left = (x) + 'px';
           carryingPoop.style.top = (y) + 'px';
         }
+      }
+
+      // Check if over litterbox for both mouse and touch
+      function checkLitterboxHover(e) {
+        const coords = getEventCoordinates(e);
+        const rect = container.getBoundingClientRect();
+        const litterboxRect = litterbox.getBoundingClientRect();
+        
+        const x = coords.clientX;
+        const y = coords.clientY;
+        
+        const isOverLitterboxNow = x >= litterboxRect.left && 
+                                  x <= litterboxRect.right && 
+                                  y >= litterboxRect.top && 
+                                  y <= litterboxRect.top + (litterboxRect.height / 2);
+        
+        if (isOverLitterboxNow && !isOverLitterbox) {
+          isOverLitterbox = true;
+          trySpawnPoop(e);
+        } else if (!isOverLitterboxNow) {
+          isOverLitterbox = false;
+        }
+      }
+
+      // Mouse events
+      container.addEventListener('mousemove', (e) => {
+        updateCursorPosition(e);
+        checkLitterboxHover(e);
       });
 
-      // Show cursor when entering container
       container.addEventListener('mouseenter', () => {
         cursor.style.display = 'block';
       });
 
-      // Hide cursor when leaving container
       container.addEventListener('mouseleave', () => {
         cursor.style.display = 'none';
       });
 
-      // Check if mouse is over top half of litterbox
-      container.addEventListener('mousemove', (e) => {
-        const rect = container.getBoundingClientRect();
-        const litterboxRect = litterbox.getBoundingClientRect();
-        
-        const x = e.clientX;
-        const y = e.clientY;
-        
-        const isOverLitterbox = x >= litterboxRect.left && 
-                               x <= litterboxRect.right && 
-                               y >= litterboxRect.top && 
-                               y <= litterboxRect.top + (litterboxRect.height / 2);
-        
-        if (isOverLitterbox && !isMouseOverLitterbox) {
-          isMouseOverLitterbox = true;
-          trySpawnPoop(e);
-        } else if (!isOverLitterbox) {
-          isMouseOverLitterbox = false;
-        }
+      // Touch events
+      container.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevent scrolling
+        cursor.style.display = 'block';
+        updateCursorPosition(e);
+        checkLitterboxHover(e);
+      });
+
+      container.addEventListener('touchmove', (e) => {
+        e.preventDefault(); // Prevent scrolling
+        updateCursorPosition(e);
+        checkLitterboxHover(e);
+      });
+
+      container.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        // Keep cursor visible on touch devices for better UX
       });
 
       function trySpawnPoop(e) {
@@ -247,9 +297,10 @@
         const poop = document.createElement('div');
         poop.className = 'poop';
         
+        const coords = getEventCoordinates(e);
         const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = coords.clientX - rect.left;
+        const y = coords.clientY - rect.top;
         
         poop.style.left = (x - 10) + 'px';
         poop.style.top = (y - 10) + 'px';
@@ -281,19 +332,29 @@
           
           // Check if game is complete
           if (poopCount >= poopsNeeded) {
-            captchaSuccess()
+            captchaSuccess();
           }
         }
       }
 
-      // Handle clicking on trash can
-      trashCan.addEventListener('click', (e) => {
+      // Handle clicking/tapping on trash can
+      function handleTrashCanInteraction(e) {
         handlePoop();
+      }
+
+      // Mouse events for trash can
+      trashCan.addEventListener('click', handleTrashCanInteraction);
+      trashCan.addEventListener('mouseover', handleTrashCanInteraction);
+      
+      // Touch events for trash can
+      trashCan.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleTrashCanInteraction(e);
       });
 
-      // Handle hover over trash can
-      trashCan.addEventListener('mouseover', (e) => {
-        handlePoop();
+      trashCan.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleTrashCanInteraction(e);
       });
 
       // Ensure cursor starts hidden
