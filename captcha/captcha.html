@@ -191,6 +191,7 @@
       const cursor = document.getElementById('custom-cursor');
       const litterbox = document.getElementById('litterbox');
       const trashCan = document.getElementById('trash-can');
+      const smugCat = document.getElementById('smugcat')
       const counterDisplay = document.getElementById('counter');
 
       let poopCount = 0;            // Nu,ber of poops collected
@@ -365,6 +366,15 @@
       
       // Add transition effects
       trashCan.style.transition = 'transform 0.15s ease';
+
+      // Handle cat events
+      function handleSmugCatInteraction(e) {
+        const meow = new Audio("meow.mp3");
+        meow.play();
+      }
+
+      // Mouse events for cat
+      smugCat.addEventListener('click', handleSmugCatInteraction);
 
     })(window, document);
   </script>
