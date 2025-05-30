@@ -2,37 +2,150 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Joel</title>
+  <title>Clean Up Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style type="text/css">
     html,
     body {
-      background: pink;
+      background: #87CEEB;
       margin: 0;
       padding: 0;
       font-family: sans-serif;
     }
 
     #captcha-container {
-      background: white;
+      background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
       width: 390px;
       height: 300px;
+      position: relative;
+      overflow: hidden;
+      cursor: none;
     }
 
-    /* Your style here... */
+    #game-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #4A4A4A;
+      margin: 10px 0;
+      text-shadow: 1px 1px 2px rgba(255,255,255,0.7);
+    }
+
+    #litterbox {
+      position: absolute;
+      bottom: 20px;
+      left: 50px;
+      width: 120px;
+      height: 80px;
+      background-image: url('litterbox.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    #trash-can {
+      position: absolute;
+      bottom: 20px;
+      right: 50px;
+      width: 60px;
+      height: 80px;
+      background-image: url('trashcan.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      cursor: pointer;
+    }
+
+    #custom-cursor {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      pointer-events: none;
+      z-index: 1000;
+      background-image: url('scooper.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    .poop {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-image: url('poo.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .carrying-poop {
+      transform: rotate(-45deg) scale(0.8);
+      margin-left: -25px;
+      margin-top: -25px;
+    }
+
+    #poop-counter {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      color: #4A4A4A;
+      border: 2px solid #DDD;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    #instructions {
+      position: absolute;
+      top: 40px;
+      left: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      text-align: center;
+      color: #4A4A4A;
+      border: 1px solid #DDD;
+    }
+
+    .success-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(76, 175, 80, 0.95);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 2000;
+    }
   </style>
 </head>
 
 <body>
   <div id="captcha-container">
-    <!-- Add your CAPTCHA here: -->
-    Hello world!
-
-    <!-- We've added a sample button. Feel free to remove it: -->
-    <button id="solve">
-      Solve!
-    </button>
+    <div id="game-title">Clean The Litterbox</div>
+    
+    <div id="instructions">
+     Scoop 10 poops out of the litterbox to continue.
+    </div>
+    
+    <div id="poop-counter">Poops Collectedf: <span id="counter">0</span>/10</div>
+    
+    <div id="litterbox"></div>
+    <div id="trash-can"></div>
+    
+    <div id="custom-cursor"></div>
   </div>
 
   <script type="text/javascript">
@@ -42,9 +155,126 @@
         window.top.postMessage("success", '*');
       }
 
-      // Your CAPTCHA code goes here, we've added a simple example below:
-      document.getElementById('solve')
-           .addEventListener('click', () => captchaSuccess());
+      const container = document.getElementById('captcha-container');
+      const cursor = document.getElementById('custom-cursor');
+      const litterbox = document.getElementById('litterbox');
+      const trashCan = document.getElementById('trash-can');
+      const counterDisplay = document.getElementById('counter');
+      
+      let poopCount = 0;
+      let carryingPoop = null;
+      let isMouseOverLitterbox = false;
+      let lastPoopSpawn = 0;
+      let poops = [];
+
+      // Update cursor position
+      container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        cursor.style.left = (x - 16) + 'px';
+        cursor.style.top = (y - 16) + 'px';
+        
+        // Update carried poop position
+        if (carryingPoop) {
+          carryingPoop.style.left = (x - 10) + 'px';
+          carryingPoop.style.top = (y - 10) + 'px';
+        }
+      });
+
+      // Show cursor when entering container
+      container.addEventListener('mouseenter', () => {
+        cursor.style.display = 'block';
+      });
+
+      // Hide cursor when leaving container
+      container.addEventListener('mouseleave', () => {
+        cursor.style.display = 'none';
+      });
+
+      // Check if mouse is over top half of litterbox
+      container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        const litterboxRect = litterbox.getBoundingClientRect();
+        
+        const x = e.clientX;
+        const y = e.clientY;
+        
+        const isOverLitterbox = x >= litterboxRect.left && 
+                               x <= litterboxRect.right && 
+                               y >= litterboxRect.top && 
+                               y <= litterboxRect.top + (litterboxRect.height / 2);
+        
+        if (isOverLitterbox && !isMouseOverLitterbox) {
+          isMouseOverLitterbox = true;
+          trySpawnPoop(e);
+        } else if (!isOverLitterbox) {
+          isMouseOverLitterbox = false;
+        }
+      });
+
+      function trySpawnPoop(e) {
+        const now = Date.now();
+        // Prevent too frequent spawning (minimum 500ms between spawns)
+        if (now - lastPoopSpawn < 500) return;
+        
+        // 20% chance to spawn poop
+        if (Math.random() < 0.2 && !carryingPoop) {
+          spawnPoop(e);
+          lastPoopSpawn = now;
+        }
+      }
+
+      function spawnPoop(e) {
+        const poop = document.createElement('div');
+        poop.className = 'poop';
+        
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        poop.style.left = (x - 10) + 'px';
+        poop.style.top = (y - 10) + 'px';
+        
+        container.appendChild(poop);
+        poops.push(poop);
+        
+        // Auto-attach poop to cursor
+        carryingPoop = poop;
+        poop.classList.add('carrying-poop');
+      }
+
+      // Handle clicking on trash can
+      trashCan.addEventListener('click', (e) => {
+        if (carryingPoop) {
+          // Remove the poop
+          container.removeChild(carryingPoop);
+          poops = poops.filter(p => p !== carryingPoop);
+          carryingPoop = null;
+          
+          // Increment counter
+          poopCount++;
+          counterDisplay.textContent = poopCount;
+          
+          // Add success effect
+          trashCan.style.transform = 'scale(1.1)';
+          setTimeout(() => {
+            trashCan.style.transform = 'scale(1)';
+          }, 150);
+          
+          // Check if game is complete
+          if (poopCount >= 10) {
+            captchaSuccess()
+          }
+        }
+      });
+
+      // Ensure cursor starts hidden
+      cursor.style.display = 'none';
+      
+      // Add transition effects
+      trashCan.style.transition = 'transform 0.15s ease';
 
     })(window, document);
   </script>
